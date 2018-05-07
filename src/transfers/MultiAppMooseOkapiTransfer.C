@@ -80,9 +80,9 @@ MultiAppMooseOkapiTransfer::execute()
   // put in the constructor because we cannot guarantee that the openmc_init
   // subroutine will be called before this object's constructor.
   int err_index = openmc_get_cell_index(_cell, &_cell_index);
-  ErrorHandling::openmc_get_cell_index(err_index, "MultiAppMooseOkapiTransfer");
+  // ErrorHandling::openmc_get_cell_index(err_index, "MultiAppMooseOkapiTransfer");
   err_index = openmc_get_tally_index(_tally, &_tally_index);
-  ErrorHandling::openmc_get_tally_index(err_index, "MultiAppMooseOkapiTransfer");
+  // ErrorHandling::openmc_get_tally_index(err_index, "MultiAppMooseOkapiTransfer");
 
   switch (_direction)
   {
@@ -224,10 +224,10 @@ MultiAppMooseOkapiTransfer::execute()
             auto starting_point = (order + 1) * stride_integer;
             std::vector<double> temp_results(tally_results + starting_point,
                                              tally_results + starting_point + order + 1);
-            if (tmp_results.size() != coefficients.size())
+            if (temp_results.size() != coefficients.size())
               mooseError("Coefficient results from openmc don't match the coefficient vector size "
                          "from MOOSE");
-            coefficients = std::move(tmp_results);
+            coefficients = std::move(temp_results);
           }
           else if (getOrderAndCheckExpansionType(type, filter_indices[0], order))
           {
@@ -248,11 +248,11 @@ MultiAppMooseOkapiTransfer::execute()
 
             std::vector<double> temp_results;
             for (decltype(order) i = 0; i < order + 1; ++i)
-              temp_results.push_back(*(stride_integer + i * num_cells_in_filter));
-            if (tmp_results.size() != coefficients.size())
+              temp_results.push_back(*(tally_results + stride_integer + i * num_cells_in_filter));
+            if (temp_results.size() != coefficients.size())
               mooseError("Coefficient results from openmc don't match the coefficient vector size "
                          "from MOOSE");
-            coefficients = std::move(tmp_results);
+            coefficients = std::move(temp_results);
           }
 
           if (_dbg)
@@ -281,18 +281,18 @@ MultiAppMooseOkapiTransfer::printResults(std::vector<Real> & results)
 }
 
 bool
-MultiAppMooseOkapiTransfer::getOrderAndCheckType(const char *& type,
-                                                 const size32_t & index,
-                                                 size32_t & order)
+MultiAppMooseOkapiTransfer::getOrderAndCheckExpansionType(const char *& type,
+                                                          const int32_t & index,
+                                                          int32_t & order)
 {
   int err_get;
-  if (type == "legendre")
+  if (!(std::string("legendre").compare(type)))
     err_get = openmc_legendre_filter_get_order(index, &order);
-  else if (type == "sphericalharmonics")
+  else if (!(std::string("sphericalharmonics").compare(type)))
     err_get = openmc_sphharm_filter_get_order(index, &order);
-  else if (type == "spatiallegendre")
+  else if (!(std::string("spatiallegendre").compare(type)))
     err_get = openmc_spatial_legendre_filter_get_order(index, &order);
-  else if (type == "zernike")
+  else if (!(std::string("zernike").compare(type)))
     err_get = openmc_zernike_filter_get_order(index, &order);
   else
     mooseError("Expected an expansion filter as the second filter.");
